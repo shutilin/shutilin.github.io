@@ -4,6 +4,93 @@
 
 <h1>My First Heading</h1>
 <p>My first paragraph.</p>
+<style>.widget-bot, .widget-button { z-index: 9999 }</style>
+<div id="chatbot-container"></div>
+<script src="https://twistellar.my.salesforce-sites.com/aibothost/lightning/lightning.out.js"></script>
+<script>
+    let aiBotInstace;
+    const isHomePage = window.location.pathname === '/' || window.location.pathname === '/index.html';
+    
+    const botConfig = {
+        isDisplayChat: false,
+        initialUserInput: null,
+        displayWidgetButton: isHomePage ? false : true
+    };
 
+    $Lightning.use(
+        'c:AiBotInterfaceApp',
+        function () {
+            $Lightning.createComponent(
+                'c:aiBotInterface',
+                botConfig,
+                'chatbot-container', 
+                function (cmp) { 
+                    console.log('The component was created.');
+                    aiBotInstace = cmp;
+                }
+            );
+        },
+        'https://twistellar.my.salesforce-sites.com/aibothost'
+    );
+  
+    function updateBotProperties(displayChat, initialUserInput, displayWidgetButton) {
+        if (aiBotInstace) {
+            aiBotInstace.set("v.isDisplayChat", displayChat);  
+            aiBotInstace.set("v.initialUserInput", initialUserInput);
+            aiBotInstace.set("v.displayWidgetButton", displayWidgetButton);
+        } else {
+            console.error("Bot instance not found!");
+        }
+    }
+
+    if (isHomePage) {
+        function setupChatbotTrigger() {
+            const triggerDiv = document.querySelector('.chatbot-trigger');
+            if (triggerDiv) {
+                const submitButton = triggerDiv.querySelector('button[type="submit"]');
+                const inputField = triggerDiv.querySelector('input[type="text"]');
+
+                if (submitButton && inputField) {
+                    submitButton.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation(); // Prevent event propagation
+                        const userInput = inputField.value.trim();
+                        console.log('userInput ', userInput)
+                        if (userInput) {
+                            updateBotProperties(true, userInput, true);
+                            inputField.value = ''; 
+                        }
+                    });
+
+                    // Disable button if input is empty
+                    inputField.addEventListener('input', function() {
+                        submitButton.disabled = !inputField.value.trim();
+                    });
+
+                    // Initialize button state
+                    submitButton.disabled = !inputField.value.trim();
+
+                    return true;
+                } else {
+                    console.error("Submit button or input field not found in chatbot-trigger!");
+                    return false;
+                }
+            } else {
+                console.error("chatbot-trigger div not found!");
+                return false;
+            }
+        }
+
+        // Try to find and set up the chatbot trigger up to 5 times with 1-second intervals
+        let attempts = 0;
+        const maxAttempts = 5;
+        const interval = setInterval(() => {
+            attempts++;
+            if (setupChatbotTrigger() || attempts >= maxAttempts) {
+                clearInterval(interval);
+            }
+        }, 1000);
+    }
+</script>
 </body>
 </html>
